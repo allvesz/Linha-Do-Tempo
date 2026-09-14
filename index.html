@@ -3,100 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timeline AI</title>
+    <title>Timeline Híbrida (Manual & IA)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bg-color: #f8fafc; --text-color: #1e293b; --text-muted: #64748b;
             --primary-color: #2563eb; --primary-hover: #1d4ed8; --card-bg: #ffffff;
             --border-color: #e2e8f0; --timeline-line: #cbd5e1;
+            --highlight-color: #d97706; /* Âmbar refinado para o modo claro */
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-color); line-height: 1.6; transition: background 0.3s, color 0.3s; }
         .container { max-width: 800px; margin: 0 auto; padding: 20px 20px 40px 20px; }
         
-        /* Botão de Modo Escuro Circular */
         #btnDarkMode {
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 20px auto 10px auto;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            font-size: 1.2rem;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.2s, background-color 0.3s, border-color 0.3s;
+            width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;
+            margin: 20px auto 10px auto; background-color: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 50%; font-size: 1.1rem; color: var(--text-color); cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s, background-color 0.3s;
         }
         #btnDarkMode:hover { transform: scale(1.1); }
 
-        h1 { text-align: center; margin-bottom: 30px; font-size: 2.2rem; }
-        .security-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
-        .security-box label { font-size: 0.9rem; font-weight: 600; color: #1e40af; }
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        #theme { grid-column: 1 / -1; }
-        input { width: 100%; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; background: var(--card-bg); color: var(--text-color); }
-        input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+        h1 { text-align: center; margin-bottom: 20px; font-size: 2.2rem; }
         
-        button.action-btn { grid-column: 1 / -1; background: var(--primary-color); color: white; border: none; padding: 14px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        .choice-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); padding: 25px;
+            border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; text-align: center;
+        }
+        .choice-card h2 { margin-bottom: 15px; font-size: 1.4rem; }
+        .btn-row { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .choice-btn {
+            background: var(--border-color); color: var(--text-color); border: none; padding: 12px 24px;
+            border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s, color 0.3s;
+        }
+        .choice-btn.active, .choice-btn:hover { background: var(--primary-color); color: white; }
+        .choice-btn.print-btn { background: #059669; color: white; }
+        .choice-btn.print-btn:hover { background: #047857; }
+
+        .hidden { display: none !important; }
+        
+        .panel {
+            background: var(--card-bg); border: 1px solid var(--border-color); padding: 20px;
+            border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .full-width { grid-column: 1 / -1; }
+        
+        label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 5px; }
+        input, textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; background: var(--card-bg); color: var(--text-color); }
+        input:focus, textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+        
+        button.action-btn {
+            background: var(--primary-color); color: white; border: none; padding: 12px;
+            border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; width: 100%;
+        }
         button.action-btn:hover { background: var(--primary-hover); }
         
-        .error-hidden { display: none; }
-        .error-visible { display: block; background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f87171; }
+        .error-visible { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f87171; font-size: 0.9rem; }
         
-        /* Estilos da Timeline */
-        #timeline-container { position: relative; padding-left: 40px; margin-top: 40px; }
+        #timeline-container { position: relative; padding-left: 40px; margin-top: 30px; }
         #timeline-container::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 4px; background: var(--timeline-line); border-radius: 4px; }
+        
         .timeline-item { position: relative; margin-bottom: 30px; opacity: 0; transform: translateY(20px); animation: fadeUp 0.6s ease forwards; }
         .timeline-item::before { content: ''; position: absolute; left: -37px; top: 5px; width: 18px; height: 18px; background: var(--primary-color); border: 4px solid var(--bg-color); border-radius: 50%; z-index: 1; }
-        .timeline-date { font-weight: 700; color: var(--primary-color); font-size: 1.2rem; margin-bottom: 8px; }
-        .timeline-content { background: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid var(--border-color); transition: background 0.3s, border-color 0.3s; }
-        .timeline-content h3 { margin-bottom: 10px; color: var(--text-color); font-size: 1.3rem; }
-        .timeline-content p { color: var(--text-muted); }
+        
+        .timeline-date { font-weight: 700; color: var(--primary-color); font-size: 1.1rem; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .timeline-content { background: var(--card-bg); padding: 18px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color); transition: background 0.3s, border-color 0.3s; }
+        .timeline-content h3 { margin-bottom: 8px; font-size: 1.2rem; }
+        .timeline-content p { color: var(--text-muted); font-size: 0.95rem; }
+
+        .item-actions { display: flex; gap: 8px; }
+        .item-actions button { background: none; border: none; cursor: pointer; font-size: 0.85rem; padding: 2px 6px; border-radius: 4px; transition: background 0.2s; }
+        .btn-edit { color: var(--primary-color); }
+        .btn-edit:hover { background: rgba(37, 99, 235, 0.1); }
+        .btn-delete { color: #dc2626; }
+        .btn-delete:hover { background: rgba(220, 38, 38, 0.1); }
+
+        /* Estilo para Eventos Importantes (Destaque) */
+        .timeline-item.important::before {
+            background-color: var(--highlight-color);
+            box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.2);
+        }
+        .timeline-item.important .timeline-date span {
+            color: var(--highlight-color);
+        }
+        .timeline-item.important .timeline-content {
+            border-left: 5px solid var(--highlight-color);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(217, 119, 6, 0.03) 100%);
+        }
         
         @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
         
-        /* Modo escuro ativado via Botão (Classe .dark-mode) */
+        /* Paleta de Cores Aprimorada para o Modo Escuro */
         body.dark-mode {
-            --bg-color: #0f172a; 
-            --text-color: #f8fafc; 
-            --text-muted: #94a3b8; 
-            --primary-color: #3b82f6; 
-            --primary-hover: #60a5fa;
-            --card-bg: #1e293b; 
-            --border-color: #334155; 
-            --timeline-line: #475569;
+            --bg-color: #0b0f19;          /* Fundo mais profundo e elegante */
+            --text-color: #f1f5f9;        /* Texto principal bem nítido */
+            --text-muted: #94a3b8;        /* Texto secundário legível */
+            --primary-color: #38bdf8;     /* Azul celeste moderno */
+            --primary-hover: #7dd3fc;
+            --card-bg: #111827;           /* Fundo do card em tom chumbo escuro */
+            --border-color: #1f2937;      /* Borda sutil */
+            --timeline-line: #374151;     /* Linha central equilibrada */
+            --highlight-color: #fbbf24;   /* Amarelo/Dourado vivo e elegante no escuro */
         }
-        body.dark-mode .security-box { background: #172554; border-color: #1e3a8a; }
-        body.dark-mode .security-box label { color: #bfdbfe; }
+
+        body.dark-mode .timeline-item.important .timeline-content {
+            background: linear-gradient(135deg, #111827 0%, rgba(251, 191, 36, 0.08) 100%);
+        }
+
+        body.dark-mode .item-actions .btn-edit { color: #38bdf8; }
+        body.dark-mode .item-actions .btn-delete { color: #f87171; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #timeline-container, #timeline-container * { visibility: visible; }
+            #workspace { display: block !important; }
+            #timeline-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+            .choice-card, .panel, #btnDarkMode, .input-group, button, .btn-row, .item-actions { display: none !important; }
+        }
     </style>
 </head>
 <body>
-    <button id="btnDarkMode" title="Alternar Modo Escuro">🌙</button>
+    <button id="btnDarkMode" title="Alternar Modo Escuro"><i id="themeIcon" class="fa-solid fa-moon"></i></button>
 
     <div class="container">
         <h1>Criador de Linhas do Tempo</h1>
         
-        <div class="security-box">
-            <label for="apiKey">Gemini API Key (Cole sua chave aqui):</label>
-            <input type="password" id="apiKey" placeholder="AIzaSy...">
+        <div class="choice-card" id="choiceCard">
+            <h2>Será criada manualmente ou com IA?</h2>
+            <div class="btn-row">
+                <button class="choice-btn" id="btnSelectManual">Modo Manual</button>
+                <button class="choice-btn" id="btnSelectAI">Modo com IA</button>
+            </div>
         </div>
 
-        <div class="input-group">
-            <input type="text" id="theme" placeholder="Tema (ex: A Guerra Fria, Minha Vida)">
-            <input type="number" id="startYear" placeholder="Ano Início (Opcional)">
-            <input type="number" id="endYear" placeholder="Ano Fim (Opcional)">
-            <button id="btnGenerate" class="action-btn">Gerar com IA</button>
+        <div id="error-message" class="hidden error-visible"></div>
+
+        <div class="panel hidden" id="aiPanel">
+            <h3>Configuração de IA Generativa</h3>
+            <div class="input-group">
+                <div class="full-width">
+                    <label>Chave de API da IA:</label>
+                    <input type="password" id="apiKey" placeholder="AIzaSy...">
+                </div>
+                <div class="full-width">
+                    <label>Tema da Linha do Tempo:</label>
+                    <input type="text" id="aiTheme" placeholder="Ex: História da Astronomia...">
+                </div>
+                <div>
+                    <label>Ano Início (Opcional):</label>
+                    <input type="number" id="aiStartYear" placeholder="Ex: 1950">
+                </div>
+                <div>
+                    <label>Ano Fim (Opcional):</label>
+                    <input type="number" id="aiEndYear" placeholder="Ex: 2020">
+                </div>
+            </div>
+            <button id="btnGenerateAI" class="action-btn">Gerar Linha do Tempo Inicial</button>
         </div>
 
-        <div id="error-message" class="error-hidden"></div>
-        <div id="timeline-container"></div>
+        <div class="panel hidden" id="manualPanel">
+            <h3>Inicialização Manual</h3>
+            <div class="input-group">
+                <div class="full-width">
+                    <label>Título / Tema da Linha do Tempo:</label>
+                    <input type="text" id="manualThemeTitle" placeholder="Ex: Marcos da Minha Carreira">
+                </div>
+                <div>
+                    <label>Data / Ano Início (Obrigatório):</label>
+                    <input type="number" id="manualStartYear" placeholder="Ex: 2010" required>
+                </div>
+                <div>
+                    <label>Data / Ano Fim (Obrigatório):</label>
+                    <input type="number" id="manualEndYear" placeholder="Ex: 2026" required>
+                </div>
+            </div>
+            <button id="btnInitManual" class="action-btn">Iniciar Linha do Tempo Manual</button>
+        </div>
+
+        <div id="workspace" class="hidden">
+            <div class="panel" style="background: var(--bg-color); border: 2px dashed var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h3 id="formPanelTitle" style="font-size: 1.1rem;"><i class="fa-solid fa-plus-circle"></i> Adicionar Informações & Variações</h3>
+                    <button class="choice-btn print-btn" id="btnPrintPDF"><i class="fa-solid fa-file-pdf"></i> Exportar PDF / Imprimir</button>
+                </div>
+
+                <div class="btn-row" id="tabRow" style="margin-bottom: 15px;">
+                    <button class="choice-btn active" id="tabAddManual">Adicionar / Editar Manual</button>
+                    <button class="choice-btn" id="tabAddAI">Expandir com IA</button>
+                </div>
+
+                <div id="addManualSubPanel">
+                    <div class="input-group">
+                        <div>
+                            <label>Ano / Data do Evento:</label>
+                            <input type="text" id="newManualYear" placeholder="Ex: 2015">
+                        </div>
+                        <div>
+                            <label>Título do Evento:</label>
+                            <input type="text" id="newManualTitle" placeholder="Ex: Formação">
+                        </div>
+                        <div class="full-width">
+                            <label>Descrição:</label>
+                            <textarea id="newManualDesc" rows="2" placeholder="Detalhes..."></textarea>
+                        </div>
+                        <div class="full-width" style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                            <input type="checkbox" id="newManualImportant" style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="newManualImportant" style="margin-bottom: 0; cursor: pointer; font-weight: 600; color: var(--text-color);">Destacar como Evento Importante</label>
+                        </div>
+                    </div>
+                    <button id="btnAddManualItem" class="action-btn">Inserir Evento na Linha do Tempo</button>
+                    <button id="btnCancelEdit" class="action-btn hidden" style="background: #64748b; margin-top: 8px;">Cancelar Edição</button>
+                </div>
+
+                <div id="addAISubPanel" class="hidden">
+                    <div class="input-group">
+                        <div class="full-width">
+                            <label>O que você deseja adicionar ou expandir?</label>
+                            <input type="text" id="aiPromptExtension" placeholder="Ex: Adicione eventos sobre tecnologia...">
+                        </div>
+                    </div>
+                    <button id="btnExpandAI" class="action-btn">Solicitar Expansão à IA</button>
+                </div>
+            </div>
+
+            <div id="timeline-container"></div>
+        </div>
     </div>
 
     <script>
         let timelineState = [];
+        let editingIndex = null;
+
+        const choiceCard = document.getElementById('choiceCard');
+        const aiPanel = document.getElementById('aiPanel');
+        const manualPanel = document.getElementById('manualPanel');
+        const workspace = document.getElementById('workspace');
+        const errorBox = document.getElementById('error-message');
+
+        document.getElementById('btnSelectManual').addEventListener('click', () => {
+            choiceCard.classList.add('hidden');
+            manualPanel.classList.remove('hidden');
+        });
+
+        document.getElementById('btnSelectAI').addEventListener('click', () => {
+            choiceCard.classList.add('hidden');
+            aiPanel.classList.remove('hidden');
+        });
+
+        document.getElementById('tabAddManual').addEventListener('click', () => {
+            document.getElementById('tabAddManual').classList.add('active');
+            document.getElementById('tabAddAI').classList.remove('active');
+            document.getElementById('addManualSubPanel').classList.remove('hidden');
+            document.getElementById('addAISubPanel').classList.add('hidden');
+        });
+
+        document.getElementById('tabAddAI').addEventListener('click', () => {
+            document.getElementById('tabAddAI').classList.add('active');
+            document.getElementById('tabAddManual').classList.remove('active');
+            document.getElementById('addAISubPanel').classList.remove('hidden');
+            document.getElementById('addManualSubPanel').classList.add('hidden');
+        });
+
+        document.getElementById('btnInitManual').addEventListener('click', () => {
+            const start = document.getElementById('manualStartYear').value.trim();
+            const end = document.getElementById('manualEndYear').value.trim();
+            const title = document.getElementById('manualThemeTitle').value.trim();
+
+            errorBox.classList.add('hidden');
+            if (!start || !end) {
+                errorBox.textContent = "Erro: Início e Fim obrigatórios.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            manualPanel.classList.add('hidden');
+            workspace.classList.remove('hidden');
+
+            timelineState.push({
+                year: start,
+                title: title || "Início",
+                description: `Período inicial de ${start} até ${end}.`,
+                important: true
+            });
+            renderTimeline();
+        });
+
+        document.getElementById('btnAddManualItem').addEventListener('click', () => {
+            const year = document.getElementById('newManualYear').value.trim();
+            const title = document.getElementById('newManualTitle').value.trim();
+            const desc = document.getElementById('newManualDesc').value.trim();
+            const important = document.getElementById('newManualImportant').checked;
+
+            errorBox.classList.add('hidden');
+            if (!year || !title) {
+                errorBox.textContent = "Erro: Preencha ano e título.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            if (editingIndex !== null) {
+                timelineState[editingIndex] = { year, title, description: desc, important };
+                editingIndex = null;
+                document.getElementById('btnAddManualItem').textContent = "Inserir Evento na Linha do Tempo";
+                document.getElementById('btnCancelEdit').classList.add('hidden');
+                document.getElementById('formPanelTitle').innerHTML = '<i class="fa-solid fa-plus-circle"></i> Adicionar Informações & Variações';
+            } else {
+                timelineState.push({ year, title, description: desc, important });
+            }
+
+            sortAndRender();
+            clearForm();
+        });
+
+        document.getElementById('btnCancelEdit').addEventListener('click', () => {
+            editingIndex = null;
+            clearForm();
+            document.getElementById('btnAddManualItem').textContent = "Inserir Evento na Linha do Tempo";
+            document.getElementById('btnCancelEdit').classList.add('hidden');
+            document.getElementById('formPanelTitle').innerHTML = '<i class="fa-solid fa-plus-circle"></i> Adicionar Informações & Variações';
+        });
+
+        function clearForm() {
+            document.getElementById('newManualYear').value = '';
+            document.getElementById('newManualTitle').value = '';
+            document.getElementById('newManualDesc').value = '';
+            document.getElementById('newManualImportant').checked = false;
+        }
+
+        window.editItem = function(index) {
+            const item = timelineState[index];
+            document.getElementById('newManualYear').value = item.year;
+            document.getElementById('newManualTitle').value = item.title;
+            document.getElementById('newManualDesc').value = item.description || '';
+            document.getElementById('newManualImportant').checked = !!item.important;
+            
+            editingIndex = index;
+            document.getElementById('btnAddManualItem').textContent = "Salvar Alterações";
+            document.getElementById('btnCancelEdit').classList.remove('hidden');
+            document.getElementById('formPanelTitle').innerHTML = `<i class="fa-solid fa-pen"></i> Editando Evento #${index + 1}`;
+            
+            document.getElementById('tabAddManual').click();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.deleteItem = function(index) {
+            if (confirm("Deseja realmente remover este evento da linha do tempo?")) {
+                timelineState.splice(index, 1);
+                sortAndRender();
+            }
+        };
+
+        document.getElementById('btnGenerateAI').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const theme = document.getElementById('aiTheme').value.trim();
+            const startYear = document.getElementById('aiStartYear').value;
+            const endYear = document.getElementById('aiEndYear').value;
+
+            errorBox.classList.add('hidden');
+            if (!apiKey || !theme) {
+                errorBox.textContent = "Erro: Chave e Tema obrigatórios.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            const btn = document.getElementById('btnGenerateAI');
+            try {
+                btn.textContent = 'Gerando...';
+                btn.disabled = true;
+
+                let dateContext = (startYear && endYear) ? `Entre os anos ${startYear} e ${endYear}.` : "";
+                const prompt = `Atue como historiador. Crie uma linha do tempo sobre: "${theme}". ${dateContext} Retorne APENAS um array JSON válido: [{"year": "Ano", "title": "Título", "description": "Descrição", "important": boolean}]. Crie pelo menos 5 eventos.`;
+
+                const resultJSON = await callAI(prompt, apiKey);
+                timelineState = [...timelineState, ...resultJSON];
+                
+                aiPanel.classList.add('hidden');
+                workspace.classList.remove('hidden');
+                sortAndRender();
+            } catch (error) {
+                errorBox.textContent = "Erro na IA: " + error.message;
+                errorBox.classList.remove('hidden');
+            } finally {
+                btn.textContent = 'Gerar Linha do Tempo Inicial';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('btnExpandAI').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const extensionPrompt = document.getElementById('aiPromptExtension').value.trim();
+
+            errorBox.classList.add('hidden');
+            if (!apiKey || !extensionPrompt) {
+                errorBox.textContent = "Erro: Chave e instrução obrigatórias.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            const btn = document.getElementById('btnExpandAI');
+            try {
+                btn.textContent = 'Expandindo...';
+                btn.disabled = true;
+
+                const currentStateStr = JSON.stringify(timelineState);
+                const prompt = `Dada a linha do tempo atual: ${currentStateStr}. Adicione eventos baseados em: "${extensionPrompt}". Retorne APENAS um array JSON com os novos eventos: [{"year": "Ano", "title": "Título", "description": "Descrição", "important": boolean}].`;
+
+                const newEvents = await callAI(prompt, apiKey);
+                timelineState = [...timelineState, ...newEvents];
+                sortAndRender();
+
+                document.getElementById('aiPromptExtension').value = '';
+            } catch (error) {
+                errorBox.textContent = "Erro: " + error.message;
+                errorBox.classList.remove('hidden');
+            } finally {
+                btn.textContent = 'Solicitar Expansão à IA';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('btnPrintPDF').addEventListener('click', () => {
+            window.print();
+        });
+
+        async function callAI(prompt, apiKey) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || response.statusText);
+            }
+
+            const data = await response.json();
+            const jsonString = data.candidates[0].content.parts[0].text;
+            const cleanJson = jsonString.replace(/```json/gi, '').replace(/```/gi, '').trim();
+            return JSON.parse(cleanJson);
+        }
+
+        function sortAndRender() {
+            timelineState.sort((a, b) => {
+                const numA = parseInt(a.year.toString().replace(/\D/g,'')) || 0;
+                const numB = parseInt(b.year.toString().replace(/\D/g,'')) || 0;
+                return numA - numB;
+            });
+            renderTimeline();
+        }
 
         function renderTimeline() {
             const container = document.getElementById("timeline-container");
@@ -105,11 +462,32 @@
             timelineState.forEach((event, index) => {
                 const item = document.createElement('div');
                 item.className = 'timeline-item';
-                item.style.animationDelay = `${index * 0.1}s`;
+                if (event.important) item.classList.add('important');
+                item.style.animationDelay = `${index * 0.05}s`;
 
                 const dateEl = document.createElement('div');
                 dateEl.className = 'timeline-date';
-                dateEl.textContent = event.year;
+                
+                const spanYear = document.createElement('span');
+                spanYear.textContent = event.year;
+                dateEl.appendChild(spanYear);
+
+                const actionsEl = document.createElement('div');
+                actionsEl.className = 'item-actions';
+                
+                const btnEdit = document.createElement('button');
+                btnEdit.className = 'btn-edit';
+                btnEdit.innerHTML = '<i class="fa-solid fa-pen"></i> Editar';
+                btnEdit.onclick = () => window.editItem(index);
+
+                const btnDelete = document.createElement('button');
+                btnDelete.className = 'btn-delete';
+                btnDelete.innerHTML = '<i class="fa-solid fa-trash"></i> Excluir';
+                btnDelete.onclick = () => window.deleteItem(index);
+
+                actionsEl.appendChild(btnEdit);
+                actionsEl.appendChild(btnDelete);
+                dateEl.appendChild(actionsEl);
 
                 const contentEl = document.createElement('div');
                 contentEl.className = 'timeline-content';
@@ -129,84 +507,10 @@
             });
         }
 
-        async function fetchGemini(prompt, apiKey) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
-            
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMsg = errorData.error?.message || response.statusText;
-                throw new Error(`Google recusou o pedido: ${errorMsg}`);
-            }
-
-            const data = await response.json();
-            const jsonString = data.candidates[0].content.parts[0].text;
-            
-            const cleanJson = jsonString.replace(/```json/gi, '').replace(/```/gi, '').trim();
-            return JSON.parse(cleanJson);
-        }
-
-        document.getElementById('btnGenerate').addEventListener('click', async () => {
-            const apiKey = document.getElementById('apiKey').value.trim();
-            const theme = document.getElementById('theme').value.trim();
-            const startYear = document.getElementById('startYear').value;
-            const endYear = document.getElementById('endYear').value;
-            const errorBox = document.getElementById('error-message');
-            const btn = document.getElementById('btnGenerate');
-            
-            errorBox.className = 'error-hidden';
-            errorBox.textContent = '';
-
-            if (!apiKey) {
-                errorBox.textContent = "Erro: Você precisa colocar sua Chave de API.";
-                errorBox.className = 'error-visible';
-                return;
-            }
-            if (!theme) {
-                errorBox.textContent = "Erro: Digite um tema para a linha do tempo.";
-                errorBox.className = 'error-visible';
-                return;
-            }
-
-            try {
-                btn.textContent = 'Gerando (Aguarde)...';
-                btn.disabled = true;
-                
-                let dateContext = (startYear && endYear) ? `Entre os anos ${startYear} e ${endYear}.` : "";
-                const prompt = `Atue como um historiador. Crie uma linha do tempo sobre: "${theme}". ${dateContext} Retorne APENAS um array JSON válido e nada mais. Use estritamente o formato: [{"year": "Ano em formato string", "title": "Título do evento", "description": "Descrição curta"}]. Crie pelo menos 5 eventos.`;
-                
-                const resultJSON = await fetchGemini(prompt, apiKey);
-                
-                timelineState = [...timelineState, ...resultJSON];
-                timelineState.sort((a, b) => parseInt(a.year.toString().replace(/\D/g,'')) - parseInt(b.year.toString().replace(/\D/g,'')));
-                
-                renderTimeline();
-                
-            } catch (error) {
-                errorBox.textContent = "Detalhe do Erro: " + error.message;
-                errorBox.className = 'error-visible';
-            } finally {
-                btn.textContent = 'Gerar com IA';
-                btn.disabled = false;
-            }
-        });
-
-        // Lógica do Botão de Modo Escuro com Ícones
         document.getElementById('btnDarkMode').addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
-            const btn = document.getElementById('btnDarkMode');
-            if (document.body.classList.contains('dark-mode')) {
-                btn.textContent = '☀️';
-                btn.title = "Alternar Modo Claro";
-            } else {
-                btn.textContent = '🌙';
-                btn.title = "Alternar Modo Escuro";
-            }
+            const icon = document.getElementById('themeIcon');
+            icon.className = document.body.classList.contains('dark-mode') ? "fa-solid fa-sun" : "fa-solid fa-moon";
         });
     </script>
 </body>
