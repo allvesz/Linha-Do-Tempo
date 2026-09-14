@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline AI</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc; --text-color: #1e293b; --text-muted: #64748b;
+            --primary-color: #2563eb; --primary-hover: #1d4ed8; --card-bg: #ffffff;
+            --border-color: #e2e8f0; --timeline-line: #cbd5e1;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); color: var(--text-color); line-height: 1.6; transition: background 0.3s, color 0.3s; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px 20px 40px 20px; }
+        
+        /* Botão de Modo Escuro Circular */
+        #btnDarkMode {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto 10px auto;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s, background-color 0.3s, border-color 0.3s;
+        }
+        #btnDarkMode:hover { transform: scale(1.1); }
+
+        h1 { text-align: center; margin-bottom: 30px; font-size: 2.2rem; }
+        .security-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .security-box label { font-size: 0.9rem; font-weight: 600; color: #1e40af; }
+        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        #theme { grid-column: 1 / -1; }
+        input { width: 100%; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; background: var(--card-bg); color: var(--text-color); }
+        input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+        
+        button.action-btn { grid-column: 1 / -1; background: var(--primary-color); color: white; border: none; padding: 14px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button.action-btn:hover { background: var(--primary-hover); }
+        
+        .error-hidden { display: none; }
+        .error-visible { display: block; background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f87171; }
+        
+        /* Estilos da Timeline */
+        #timeline-container { position: relative; padding-left: 40px; margin-top: 40px; }
+        #timeline-container::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 4px; background: var(--timeline-line); border-radius: 4px; }
+        .timeline-item { position: relative; margin-bottom: 30px; opacity: 0; transform: translateY(20px); animation: fadeUp 0.6s ease forwards; }
+        .timeline-item::before { content: ''; position: absolute; left: -37px; top: 5px; width: 18px; height: 18px; background: var(--primary-color); border: 4px solid var(--bg-color); border-radius: 50%; z-index: 1; }
+        .timeline-date { font-weight: 700; color: var(--primary-color); font-size: 1.2rem; margin-bottom: 8px; }
+        .timeline-content { background: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid var(--border-color); transition: background 0.3s, border-color 0.3s; }
+        .timeline-content h3 { margin-bottom: 10px; color: var(--text-color); font-size: 1.3rem; }
+        .timeline-content p { color: var(--text-muted); }
+        
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modo escuro ativado via Botão (Classe .dark-mode) */
+        body.dark-mode {
+            --bg-color: #0f172a; 
+            --text-color: #f8fafc; 
+            --text-muted: #94a3b8; 
+            --primary-color: #3b82f6; 
+            --primary-hover: #60a5fa;
+            --card-bg: #1e293b; 
+            --border-color: #334155; 
+            --timeline-line: #475569;
+        }
+        body.dark-mode .security-box { background: #172554; border-color: #1e3a8a; }
+        body.dark-mode .security-box label { color: #bfdbfe; }
+    </style>
+</head>
+<body>
+    <button id="btnDarkMode" title="Alternar Modo Escuro">🌙</button>
+
+    <div class="container">
+        <h1>Criador de Linhas do Tempo</h1>
+        
+        <div class="security-box">
+            <label for="apiKey">Gemini API Key (Cole sua chave aqui):</label>
+            <input type="password" id="apiKey" placeholder="AIzaSy...">
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="theme" placeholder="Tema (ex: A Guerra Fria, Minha Vida)">
+            <input type="number" id="startYear" placeholder="Ano Início (Opcional)">
+            <input type="number" id="endYear" placeholder="Ano Fim (Opcional)">
+            <button id="btnGenerate" class="action-btn">Gerar com IA</button>
+        </div>
+
+        <div id="error-message" class="error-hidden"></div>
+        <div id="timeline-container"></div>
+    </div>
+
+    <script>
+        let timelineState = [];
+
+        function renderTimeline() {
+            const container = document.getElementById("timeline-container");
+            container.textContent = ''; 
+
+            timelineState.forEach((event, index) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                item.style.animationDelay = `${index * 0.1}s`;
+
+                const dateEl = document.createElement('div');
+                dateEl.className = 'timeline-date';
+                dateEl.textContent = event.year;
+
+                const contentEl = document.createElement('div');
+                contentEl.className = 'timeline-content';
+
+                const titleEl = document.createElement('h3');
+                titleEl.textContent = event.title;
+
+                const descEl = document.createElement('p');
+                descEl.textContent = event.description;
+
+                contentEl.appendChild(titleEl);
+                contentEl.appendChild(descEl);
+                item.appendChild(dateEl);
+                item.appendChild(contentEl);
+                
+                container.appendChild(item);
+            });
+        }
+
+        async function fetchGemini(prompt, apiKey) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+            
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error?.message || response.statusText;
+                throw new Error(`Google recusou o pedido: ${errorMsg}`);
+            }
+
+            const data = await response.json();
+            const jsonString = data.candidates[0].content.parts[0].text;
+            
+            const cleanJson = jsonString.replace(/```json/gi, '').replace(/```/gi, '').trim();
+            return JSON.parse(cleanJson);
+        }
+
+        document.getElementById('btnGenerate').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const theme = document.getElementById('theme').value.trim();
+            const startYear = document.getElementById('startYear').value;
+            const endYear = document.getElementById('endYear').value;
+            const errorBox = document.getElementById('error-message');
+            const btn = document.getElementById('btnGenerate');
+            
+            errorBox.className = 'error-hidden';
+            errorBox.textContent = '';
+
+            if (!apiKey) {
+                errorBox.textContent = "Erro: Você precisa colocar sua Chave de API.";
+                errorBox.className = 'error-visible';
+                return;
+            }
+            if (!theme) {
+                errorBox.textContent = "Erro: Digite um tema para a linha do tempo.";
+                errorBox.className = 'error-visible';
+                return;
+            }
+
+            try {
+                btn.textContent = 'Gerando (Aguarde)...';
+                btn.disabled = true;
+                
+                let dateContext = (startYear && endYear) ? `Entre os anos ${startYear} e ${endYear}.` : "";
+                const prompt = `Atue como um historiador. Crie uma linha do tempo sobre: "${theme}". ${dateContext} Retorne APENAS um array JSON válido e nada mais. Use estritamente o formato: [{"year": "Ano em formato string", "title": "Título do evento", "description": "Descrição curta"}]. Crie pelo menos 5 eventos.`;
+                
+                const resultJSON = await fetchGemini(prompt, apiKey);
+                
+                timelineState = [...timelineState, ...resultJSON];
+                timelineState.sort((a, b) => parseInt(a.year.toString().replace(/\D/g,'')) - parseInt(b.year.toString().replace(/\D/g,'')));
+                
+                renderTimeline();
+                
+            } catch (error) {
+                errorBox.textContent = "Detalhe do Erro: " + error.message;
+                errorBox.className = 'error-visible';
+            } finally {
+                btn.textContent = 'Gerar com IA';
+                btn.disabled = false;
+            }
+        });
+
+        // Lógica do Botão de Modo Escuro com Ícones
+        document.getElementById('btnDarkMode').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const btn = document.getElementById('btnDarkMode');
+            if (document.body.classList.contains('dark-mode')) {
+                btn.textContent = '☀️';
+                btn.title = "Alternar Modo Claro";
+            } else {
+                btn.textContent = '🌙';
+                btn.title = "Alternar Modo Escuro";
+            }
+        });
+    </script>
+</body>
+</html>

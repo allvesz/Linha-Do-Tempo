@@ -1,0 +1,25 @@
+/* Modo escuro forçado por classe */
+body.dark-mode {
+    --bg-color: #0f172a;
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+    --primary-color: #3b82f6;
+    --primary-hover: #60a5fa;
+    --card-bg: #1e293b;
+    --border-color: #334155;
+    --timeline-line: #475569;
+}
+
+body.dark-mode .security-box {
+    background-color: #172554;
+    border-color: #1e3a8a;
+}
+
+body.dark-mode .security-box label {
+    color: #bfdbfe;
+}
+
+body.dark-mode input {
+    background-color: #0f172a;
+    color: var(--text-color);
+}
